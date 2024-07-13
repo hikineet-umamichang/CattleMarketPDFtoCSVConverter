@@ -18,5 +18,5 @@ distディレクトリのmain.exeをダウンロードするだけで使えま�
 
 ```
 pyinstaller --onefile --noconsole --icon=cow.ico main.py
-```pyinstaller --onefile --noconsole --icon=cow.ico main.py
+```
 

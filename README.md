@@ -10,4 +10,13 @@ distディレクトリのmain.exeをダウンロードするだけで使えま�
 
 ## Usage
 
-実行するとフォルダ選択画面が表示されるので、解析したいPDFが格納されているフォルダを選択してください。同じフォルダに必要情報を抜き出したPDFを格納します。
+実行するとフォルダ選択画面が表示されるので、解析したいPDFが格納されているフォルダを選択してください。同じフォルダに必要情報を抜き出したCSVを格納します。
+
+## Build
+
+自分でビルドするときは下記のコマンドを実行してください
+
+```
+pyinstaller --onefile --noconsole --icon=cow.ico main.py
+```pyinstaller --onefile --noconsole --icon=cow.ico main.py
+

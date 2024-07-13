@@ -1,24 +1,13 @@
 import csv
-import logging
 import os
 import tkinter as tk
-from tempfile import TemporaryDirectory
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 
 from pdfminer.converter import PDFPageAggregator
 from pdfminer.layout import LAParams, LTTextContainer
 from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
 from pdfminer.pdfpage import PDFPage
 from pypdf import PdfReader, PdfWriter
-
-
-def ask_foldername() -> str:
-    # ルートウィンドウ作成
-    root = tk.Tk()
-    # ルートウィンドウの非表示
-    root.withdraw()
-
-    return filedialog.askdirectory()
 
 
 def remove_copy_protections(source: str, destination: str) -> None:
@@ -170,34 +159,56 @@ def format_data(data: list[list[str, float, float]]) -> list[list[str]]:
     return [col_label] + table
 
 
-def main():
-    # ユーザーにフォルダを選択させる
-    target_folder = ask_foldername()
-    # print("target_folder is :", target_folder)
+class App:
+    def __init__(self, root):
+        self.root = root
+        self.root.geometry("400x150")
+        self.root.title("畜産生産実績一覧表 to CSV")
 
-    # 一時ディレクトリを作成して、PDF ファイルの処理を行う
-    with TemporaryDirectory() as temp_dir:
-        # 選択されたフォルダ内の各ファイルについて処理を実行する
-        for filename in os.listdir(target_folder):
-            # 拡張子が ".pdf" のファイルに対して処理を行う
-            if not filename.endswith(".pdf"):
+        self.label = tk.Label(root, text="処理するフォルダを選択してください")
+        self.label.pack(pady=20)
+
+        self.select_button = tk.Button(
+            root, text="フォルダ選択", command=self.select_folder
+        )
+        self.select_button.pack(pady=10)
+
+        self.progress_label = tk.Label(root, text="")
+        self.progress_label.pack(pady=10)
+
+    def select_folder(self):
+        folder_path = filedialog.askdirectory()
+        if folder_path:
+            self.process_files(folder_path)
+
+    def process_files(self, folder_path):
+        files = os.listdir(folder_path)
+        total_files = len(files)
+        processed_files = 0
+
+        for file in files:
+            processed_files += 1
+            self.progress_label.config(
+                text=f"進行状況: {processed_files}/{total_files}"
+            )
+            self.root.update_idletasks()
+
+            if not file.endswith(".pdf"):
                 continue
 
-            # ファイルパスの設定
-            target_file = os.path.join(target_folder, filename)
-            output_file = target_file.replace(".pdf", ".csv")
-
-            # PDF ファイルからコピープロテクトを取り除くために一時ディレクトリにコピーする
-            temp_pdf = os.path.join(temp_dir, filename)
-            remove_copy_protections(target_file, temp_pdf)
-
-            # PDF からテキストと座標情報を取得する
-            text_and_coordinates = extract_text_with_positions(temp_pdf)
-
-            # 取得したテキストと座標情報を整形する
+            file_path = os.path.join(folder_path, file)
+            temp_file = os.path.join(folder_path, file + "temp")
+            remove_copy_protections(file_path, temp_file)
+            text_and_coordinates = extract_text_with_positions(temp_file)
+            os.remove(temp_file)
             formatted_data = format_data(text_and_coordinates)
 
-            # 整形されたデータを CSV ファイルに書き込む
+            output_file = os.path.join(
+                folder_path,
+                text_and_coordinates[45][0].rstrip().replace("(cid:8443)", "崎")
+                + ".csv",
+            )
+
             with open(
                 output_file,
                 mode="w",
@@ -205,18 +216,11 @@ def main():
                 newline="",
             ) as f:
                 csv.writer(f).writerows(formatted_data)
-    # print("process has completed.")
+        messagebox.showinfo("完了", f"{total_files}個のファイルの処理が完了しました")
+        self.progress_label.config(text="")
 
 
 if __name__ == "__main__":
-    # ログを作成
-    try:
-        main()
-    except:
-        log_file = "logger.log"
-        if not os.path.isfile(log_file):
-            f = open(log_file, "x")
-            f.close()
-
-        logging.basicConfig(filename=log_file)
-        logging.exception("What is doing when exception happens.")
+    root = tk.Tk()
+    app = App(root)
+    root.mainloop()
